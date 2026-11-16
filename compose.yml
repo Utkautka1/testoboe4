@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: keitaro_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: keitaro_wrapper
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d keitaro_wrapper"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: api.dockerfile
+    container_name: keitaro_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_password@postgres:5432/keitaro_wrapper
+      - CAMPAIGN_PREFIX=test_strygin_
+      - KEITARO_BASE_URL=https://tlgk.host
+      - KEITARO_LOGIN=fortests@etolegko.com
+      - KEITARO_PASSWORD=T9*2jiT8zoUKEH1J7VvFqkXM
+      - KEITARO_DEFAULT_DOMAIN_ID=1813
+      - KEITARO_DEFAULT_GROUP_ID=9799
+      - KEITARO_DEFAULT_SOURCE_ID=836
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

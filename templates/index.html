@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keitaro Campaigns & Stream Editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* Неопубликованный поток */
+    .stream-draft-active {
+      border-color: #f59e0b !important;
+      background-color: #fffbeb !important;
+    }
+    .dark .stream-draft-active {
+      border-color: #d97706 !important;
+      background-color: rgba(245, 158, 11, 0.05) !important;
+    }
+    /* Удаленная строка */
+    .row-removed {
+      opacity: 0.5;
+      background-color: #f1f5f9;
+      text-decoration: line-through;
+    }
+    .dark .row-removed {
+      background-color: rgba(30, 41, 59, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- Навигация -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm tracking-tight">
+          K
+        </div>
+        <div>
+          <h1 class="text-sm font-semibold text-slate-900">Keitaro Manager</h1>
+          <p class="text-xs text-slate-500">Управление кампаниями и потоками</p>
+        </div>
+      </div>
+      
+      <!-- Табы -->
+      <nav class="flex bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+        <button id="tab-create-btn" onclick="switchTab('create')" class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all bg-white text-slate-900 shadow-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-plus text-slate-500"></i> Создать кампанию
+        </button>
+        <button id="tab-edit-btn" onclick="switchTab('edit')" class="px-3.5 py-1.5 text-xs font-medium rounded-md transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-sliders text-slate-400"></i> Редактор офферов
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Контент -->
+  <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
+
+    <!-- TAB 1: Создание кампании -->
+    <section id="tab-create" class="space-y-6">
+      <div class="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
+        <div class="max-w-2xl border-b border-slate-100 pb-5 mb-6">
+          <h2 class="text-base font-semibold text-slate-900">Параметры новой кампании</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Кампания создаётся с двумя потоками: фильтрация трафика страны (Google-редирект) и целевой поток оффера.
+          </p>
+        </div>
+
+        <form id="create-campaign-form" onsubmit="handleCreateCampaign(event)" class="space-y-5 max-w-2xl">
+          <!-- Название -->
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Название кампании</label>
+            <div class="flex items-center rounded-lg border border-slate-300 focus-within:border-slate-800 focus-within:ring-1 focus-within:ring-slate-800 px-3 py-2 bg-white transition-all">
+              <span class="text-xs text-slate-400 font-mono select-none pr-1">test_strygin_</span>
+              <input type="text" id="campaign-name" required placeholder="lead_gen_01" class="bg-transparent flex-1 outline-none text-xs text-slate-900 placeholder-slate-400 font-medium">
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Префикс <span class="font-mono text-slate-600">test_strygin_</span> подставляется автоматически</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Гео -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">Гео-код страны</label>
+              <div class="relative">
+                <input type="text" id="campaign-geo" required maxlength="2" placeholder="PE" value="PE" class="w-full uppercase rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all font-mono">
+                <span class="absolute right-3 top-2 text-slate-400 text-[10px] font-mono">ISO2</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">Например: PE, RU, US, AU</p>
+            </div>
+
+            <!-- ID оффера -->
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1.5">ID целевого оффера</label>
+              <input type="number" id="campaign-offer-id" required min="1" placeholder="4440" value="4440" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all font-mono">
+              <p class="text-[11px] text-slate-400 mt-1">ID оффера в системе Keitaro</p>
+            </div>
+          </div>
+
+          <!-- Интерактивный поиск оффера -->
+          <div class="relative">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Быстрый подбор оффера</label>
+            <div class="relative">
+              <input type="text" id="offer-search-input" oninput="handleOfferSearch(this.value)" placeholder="Начните вводить название или ID оффера..." class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all">
+              <span class="absolute right-3 top-2.5 text-slate-400 text-xs">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+            </div>
+            <!-- Выпадающий список совпадений -->
+            <div id="offer-search-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50 text-xs">
+            </div>
+          </div>
+
+          <!-- Дефолтные привязки -->
+          <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-3 text-xs space-y-1 text-slate-600">
+            <div class="flex justify-between">
+              <span>Домен:</span>
+              <span class="font-mono text-slate-900">https://kylovoa.com/ (ID 1813)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Группа:</span>
+              <span class="font-mono text-slate-900">VZ adrobot test (ID 9799)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Источник:</span>
+              <span class="font-mono text-slate-900">FORTESTS (ID 836)</span>
+            </div>
+          </div>
+
+          <button type="submit" id="submit-create-btn" class="w-full py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs transition-colors flex items-center justify-center gap-2 shadow-sm">
+            Создать кампанию
+          </button>
+        </form>
+      </div>
+
+      <!-- Результат -->
+      <div id="create-result" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-xs text-slate-800">
+      </div>
+    </section>
+
+    <!-- TAB 2: Редактор кампании и потоков -->
+    <section id="tab-edit" class="hidden space-y-6">
+      <!-- Селектор кампании -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-end justify-between">
+          <div class="flex-1 w-full max-w-xl">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Кампания для редактирования</label>
+            <div class="flex gap-2">
+              <select id="campaigns-select" onchange="loadCampaignDetail(this.value)" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 outline-none focus:border-slate-800 transition-all">
+                <option value="">Выберите кампанию...</option>
+              </select>
+              <button onclick="loadCampaignsList(true)" title="Обновить список" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 text-xs transition-colors">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <button id="fetch-streams-btn" onclick="handleFetchStreams()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium transition-colors border border-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-cloud-arrow-down text-slate-500"></i> Синхронизировать (Fetch)
+          </button>
+        </div>
+      </div>
+
+      <!-- Контейнер потоков -->
+      <div id="campaign-editor-panel" class="hidden space-y-4">
+        <div id="streams-container" class="space-y-4">
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Уведомления -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-200 translate-y-16 opacity-0 max-w-sm bg-white border border-slate-200 rounded-lg p-3.5 shadow-lg flex items-center gap-3">
+    <div id="toast-icon" class="text-sm"></div>
+    <div id="toast-text" class="text-xs font-medium text-slate-800"></div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
